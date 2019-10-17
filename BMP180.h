@@ -45,7 +45,11 @@ public:
 	sampling_t;
 
 	// Constructor and basics
+#if defined(BMP180_DEBUG)
+	BMP180(I2CDEVICE_I2C_CLASS* i2c, Serial* serial);
+#else
 	BMP180(I2CDEVICE_I2C_CLASS* i2c);
+#endif
 	bool init();
 	void set_sampling(sampling_t sampling);
 
@@ -93,4 +97,9 @@ private:
 	// State data
 	int32_t b5;
 	float temp, pres, alt_zero;
+
+	// DEBUG
+#if defined(BMP180_DEBUG)
+	Serial* serial;
+#endif
 };
