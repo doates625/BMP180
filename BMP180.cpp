@@ -8,12 +8,11 @@
 /**
  * @brief Constructs BMP180 interface
  * @param i2c Platform-specific I2C bus interface
- * @param p0 Sea-level pressure [kPa]
  */
-BMP180::BMP180(I2CDEVICE_I2C_CLASS* i2c, float p0)
+BMP180::BMP180(I2CDEVICE_I2C_CLASS* i2c)
 {
 	this->i2c = I2CDevice(i2c, i2c_addr, I2CDevice::msb_first);
-	this->pressure0 = p0;
+	this->alt_zero = 0.0f;
 }
 
 /**
@@ -88,15 +87,42 @@ void BMP180::set_sampling(sampling_t sampling)
 }
 
 /**
- * @brief Updates temperature, pressure, and altitude readings
+ * @brief Updates temperature and pressure readings
  */
 void BMP180::update()
+{
+	update_temp();
+	update_pres();
+}
+
+/**
+ * @brief Updates temperature reading
+ */
+void BMP180::update_temp()
 {
 	// Read uncompensated temperature
 	i2c.write_uint8(reg_select_addr, reg_select_temp);
 	Platform::wait_us(4500);
 	int32_t UT = i2c.read_int16(reg_data_addr);
 
+	// Calibration compensation
+	int32_t x1, x2, T;
+	x1 = ((UT - ac6) * ac5) >> 15;
+	x2 = (mc << 11) / (x1 + md);
+	b5 = x1 + x2;
+	T = (b5 + 8) >> 4;
+
+	// Calculate temperature
+	temp = T * 0.1f;
+}
+
+/**
+ * @brief Updates pressure reading
+ * 
+ * Uses temperature from last call to update() or update_temp().
+ */
+void BMP180::update_pres()
+{
 	// Read uncompensated pressure
 	i2c.write_uint8(reg_select_addr, reg_select_oss);
 	Platform::wait_us(comp_time_us);
@@ -106,41 +132,35 @@ void BMP180::update()
 	int32_t xlsb = i2c.read_uint8();
 	uint32_t UP = ((msb << 16) + (lsb << 8) + xlsb) >> (8 - oss_shift);
 
-	// Calculate temperature
-	int32_t x1, x2, b5, T;
-	x1 = (UT - ac6) * ac5 / 32768;
-	x2 = mc * 2048 / (x1 + md);
-	b5 = x1 + x2;
-	T = (b5 + 8) / 16;
-
-	// Calculate pressure
-	int32_t b6, x3, b3, p;
+	// Calibration compensation
+	int32_t b6, x1, x2 ,x3, b3, p;
 	uint32_t b4, b7;
 	b6 = b5 - 4000;
-	x1 = (b2 * (b6 * b6 / 4096)) / 2048;
-	x2 = ac2 * b6 / 2048;
+	x1 = (b2 * ((b6 * b6) >> 12)) >> 11;
+	x2 = (ac2 * b6) >> 11;
 	x3 = x1 + x2;
-	b3 = (((ac1 * 4 + x3) << oss_shift) + 2) / 4;
-	x1 = ac3 * b6 / 8192;
-	x2 = (b1 * (b6 * b6 / 4096)) / 65536;
-	x3 = ((x1 + x2) + 2) / 4;
-	b4 = ac4 * (uint32_t)(x3 + 32768) / 32768;
+	b3 = (((ac1 * 4 + x3) << oss_shift) + 2) >> 2;
+	x1 = (ac3 * b6) >> 13;
+	x2 = (b1 * ((b6 * b6) >> 12)) >> 16;
+	x3 = ((x1 + x2) + 2) >> 2;
+	b4 = (ac4 * (uint32_t)(x3 + 32768)) >> 15;
 	b7 = (UP - b3) * (uint32_t)(50000 >> oss_shift);
 	if (b7 < 0x80000000) { p = (b7 * 2) / b4; }
 	else { p = (b7 / b4) * 2; }
-	x1 = (p / 256) * (p / 256);
-	x1 = (x1 * 3038) / 65536;
-	x2 = (-7357 * p) / 65536;
-	p = p + (x1 + x2 + 3791) / 16;
+	x1 = p >> 8;
+	x1 = x1 * x1;
+	x1 = (x1 * 3038) >> 16;
+	x2 = (-7357 * p) >> 16;
+	p = p + ((x1 + x2 + 3791) >> 4);
 
-	// Calculate final values
-	temp = T * 0.1f;
-	pressure = p * 0.001f;
-	altitude = 44330.0f * (1.0f - powf(pressure / pressure0, 1.0f / 5.255f));
+	// Calculate pressure
+	pres = p * 0.001f;
 }
 
 /**
  * @brief Returns temperature [deg C]
+ * 
+ * Uses temperature from last call to update() or update_temp().
  */
 float BMP180::get_temp()
 {
@@ -149,25 +169,32 @@ float BMP180::get_temp()
 
 /**
  * @brief Returns pressure [kPa]
+ * 
+ * Uses pressure from last call to update() or update_pres().
  */
-float BMP180::get_pressure()
+float BMP180::get_pres()
 {
-	return pressure;
+	return pres;
 }
 
 /**
  * @brief Returns altitude above sea-level [m]
+ * @param sea_level_p Sea-level pressure [kPa]
+ * 
+ * Uses pressure from last call to update() or update_pres().
  */
-float BMP180::get_altitude()
+float BMP180::get_alt(float sea_level_p)
 {
-	return altitude - altitude_offset;
+	float alt = 44330.0f * (1.0f - powf(pres / sea_level_p, 0.190295f));
+	return alt - alt_zero;
 }
 
 /**
  * @brief Sets current altitude to zero position
+ * @param sea_level_p Sea-level pressure [kPa]
  */
-void BMP180::zero_altitude()
+void BMP180::zero_alt(float sea_level_p)
 {
 	update();
-	altitude_offset = altitude;
+	alt_zero = get_alt(sea_level_p);
 }

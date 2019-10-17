@@ -45,18 +45,20 @@ public:
 	sampling_t;
 
 	// Constructor and basics
-	BMP180(I2CDEVICE_I2C_CLASS* i2c, float p0 = 101.325f);
+	BMP180(I2CDEVICE_I2C_CLASS* i2c);
 	bool init();
 	void set_sampling(sampling_t sampling);
 
 	// Measurements
 	void update();
+	void update_temp();
+	void update_pres();
 	float get_temp();
-	float get_pressure();
-	float get_altitude();
+	float get_pres();
+	float get_alt(float sea_level_p = 101.325f);
 	
 	// Altitude calibration
-	void zero_altitude();
+	void zero_alt(float sea_level_p = 101.325f);
 
 private:
 
@@ -88,10 +90,7 @@ private:
 	int32_t b1, b2;
 	int32_t mb, mc, md;
 
-	// Altitude calculation
-	float pressure0;
-	float altitude_offset;
-
 	// State data
-	float temp, pressure, altitude;
+	int32_t b5;
+	float temp, pres, alt_zero;
 };
