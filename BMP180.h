@@ -22,7 +22,7 @@
  * Minimum I2C Buffer Size
  */
 #if defined(PLATFORM_MBED) && I2CDEVICE_BUFFER_SIZE < 22
-	#warning BMP180 requires I2CDEVICE_BUFFER_SIZE >= 14. Setting to 14.
+	#warning BMP180 requires I2CDEVICE_BUFFER_SIZE >= 22. Setting to 22.
 	#undef I2CDEVICE_BUFFER_SIZE
 	#define I2CDEVICE_BUFFER_SIZE 22
 #endif
