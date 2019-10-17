@@ -104,12 +104,12 @@ void BMP180::update()
 	int32_t msb = i2c.read_uint8();
 	int32_t lsb = i2c.read_uint8();
 	int32_t xlsb = i2c.read_uint8();
-	int32_t UP = ((msb << 16) + (lsb << 8) + xlsb) >> (8 - oss_shift);
+	uint32_t UP = ((msb << 16) + (lsb << 8) + xlsb) >> (8 - oss_shift);
 
 	// Calculate temperature
 	int32_t x1, x2, b5, T;
-	x1 = (UT - (int32_t)ac6) * (int32_t)ac5 / 32768;
-	x2 = (int32_t)mc * 2048 / (x1 + md);
+	x1 = (UT - ac6) * ac5 / 32768;
+	x2 = mc * 2048 / (x1 + md);
 	b5 = x1 + x2;
 	T = (b5 + 8) / 16;
 
@@ -117,21 +117,21 @@ void BMP180::update()
 	int32_t b6, x3, b3, p;
 	uint32_t b4, b7;
 	b6 = b5 - 4000;
-	x1 = ((int32_t)b2 * (b6 * b6 / 4096)) / 2048;
-	x2 = (int32_t)ac2 * b6 / 2048;
+	x1 = (b2 * (b6 * b6 / 4096)) / 2048;
+	x2 = ac2 * b6 / 2048;
 	x3 = x1 + x2;
-	b3 = ((((int32_t)ac1 * 4 + x3) << oss_shift) + 2) / 4;
-	x1 = (int32_t)ac3 * b6 / 8192;
-	x2 = ((int32_t)b1 * (b6 * b6 / 4096)) / 65536;
+	b3 = (((ac1 * 4 + x3) << oss_shift) + 2) / 4;
+	x1 = ac3 * b6 / 8192;
+	x2 = (b1 * (b6 * b6 / 4096)) / 65536;
 	x3 = ((x1 + x2) + 2) / 4;
-	b4 = (uint32_t)ac4 * (uint32_t)(x3 + 32768) / 32768;
-	b7 = ((uint32_t)UP - b3) * (uint32_t)(50000 >> oss_shift);
+	b4 = ac4 * (uint32_t)(x3 + 32768) / 32768;
+	b7 = (UP - b3) * (uint32_t)(50000 >> oss_shift);
 	if (b7 < 0x80000000) { p = (b7 * 2) / b4; }
 	else { p = (b7 / b4) * 2; }
 	x1 = (p / 256) * (p / 256);
 	x1 = (x1 * 3038) / 65536;
 	x2 = (-7357 * p) / 65536;
-	p = p + (x1 + x2 + (int32_t)3791) / 16;
+	p = p + (x1 + x2 + 3791) / 16;
 
 	// Calculate final values
 	temp = T * 0.1f;

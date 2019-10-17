@@ -83,10 +83,10 @@ private:
 	sampling_t sampling;
 
 	// Calibration Parameters
-	int16_t ac1, ac2, ac3;
-	uint16_t ac4, ac5, ac6;
-	int16_t b1, b2;
-	int16_t mb, mc, md;
+	int32_t ac1, ac2, ac3;
+	uint32_t ac4, ac5, ac6;
+	int32_t b1, b2;
+	int32_t mb, mc, md;
 
 	// Altitude calculation
 	float pressure0;
