@@ -2,21 +2,6 @@
  * @file BMP180.h
  * @brief Class for interfacing with BMP180 I2C pressure sensor
  * @author Dan Oates (WPI Class of 2020)
- * 
- * The BMP180 measures temperature and pressure, and can use this data to
- * estimate altitude. This class acts as an I2C interface with the device for
- * Arduino and Mbed platforms (see Platform dependency).
- * 
- * Note: This class fails to accurately measure pressure (and thus altitude) on
- * the Arduino platform for 8x oversampling.
- * 
- * Dependencies:
- * - I2CDevice: https://github.com/doates625/I2CDevice.git
- * - Platform: https://github.com/doates625/Platform.git
- * - Unions: https://github.com/doates625/Unions.git
- * 
- * References:
- * - Datasheet: https://cdn-shop.adafruit.com/datasheets/BST-BMP180-DS000-09.pdf
  */
 #pragma once
 #include <I2CDevice.h>
