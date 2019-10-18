@@ -9,17 +9,10 @@
  * @brief Constructs BMP180 interface
  * @param i2c Platform-specific I2C bus interface
  */
-#if defined(PLATFORM_MBED) && defined(BMP180_DEBUG)
-BMP180::BMP180(I2CDEVICE_I2C_CLASS* i2c, Serial* serial)
-#else
 BMP180::BMP180(I2CDEVICE_I2C_CLASS* i2c)
-#endif
 {
 	this->i2c = I2CDevice(i2c, i2c_addr, I2CDevice::msb_first);
 	this->alt_zero = 0.0f;
-#if defined(PLATFORM_MBED) && defined(BMP180_DEBUG)
-	this->serial = serial;
-#endif
 }
 
 /**
@@ -28,14 +21,6 @@ BMP180::BMP180(I2CDEVICE_I2C_CLASS* i2c)
  */
 bool BMP180::init()
 {
-#if defined(BMP180_DEBUG)
-#if defined(PLATFORM_ARDUINO)
-	Serial.println("BMP180 Debug:");
-#elif defined(PLATFORM_MBED)
-	serial->printf("BMP180 Debug:\n");
-#endif
-#endif
-
 	// Check ID register
 	if (i2c.read_uint8(reg_id_addr) != reg_id_val)
 	{
@@ -55,36 +40,6 @@ bool BMP180::init()
 	mb = i2c.read_int16();
 	mc = i2c.read_int16();
 	md = i2c.read_int16();
-
-#if defined(BMP180_DEBUG)
-#if defined(PLATFORM_ARDUINO)
-	Serial.println("Calibration:");
-	Serial.println(ac1);
-	Serial.println(ac2);
-	Serial.println(ac3);
-	Serial.println(ac4);
-	Serial.println(ac5);
-	Serial.println(ac6);
-	Serial.println(b1);
-	Serial.println(b2);
-	Serial.println(mb);
-	Serial.println(mc);
-	Serial.println(md);
-#elif defined(PLATFORM_MBED)
-	serial->printf("Calibration:\n");
-	serial->printf("%i\n", (int)ac1);
-	serial->printf("%i\n", (int)ac2);
-	serial->printf("%i\n", (int)ac3);
-	serial->printf("%u\n", (unsigned int)ac4);
-	serial->printf("%u\n", (unsigned int)ac5);
-	serial->printf("%u\n", (unsigned int)ac6);
-	serial->printf("%i\n", (int)b1);
-	serial->printf("%i\n", (int)b2);
-	serial->printf("%i\n", (int)mb);
-	serial->printf("%i\n", (int)mc);
-	serial->printf("%i\n", (int)md);
-#endif
-#endif
 
 	// Set sampling to 1x
 	set_sampling(samples_1x);
@@ -150,34 +105,12 @@ void BMP180::update_temp()
 	Platform::wait_us(4500);
 	int32_t UT = i2c.read_int16(reg_data_addr);
 
-#if defined(BMP180_DEBUG)
-#if defined(PLATFORM_ARDUINO)
-	Serial.println(UT);
-#elif defined(PLATFORM_MBED)
-	serial->printf("%i\n", (int)UT);
-#endif
-#endif
-
 	// Calibration compensation
 	int32_t x1, x2, T;
 	x1 = ((UT - ac6) * ac5) >> 15;
 	x2 = (mc << 11) / (x1 + md);
 	b5 = x1 + x2;
 	T = (b5 + 8) >> 4;
-
-#if defined(BMP180_DEBUG)
-#if defined(PLATFORM_ARDUINO)
-	Serial.println(x1);
-	Serial.println(x2);
-	Serial.println(b5);
-	Serial.println(T);
-#elif defined(PLATFORM_MBED)
-	serial->printf("%i\n", (int)x1);
-	serial->printf("%i\n", (int)x2);
-	serial->printf("%i\n", (int)b5);
-	serial->printf("%i\n", (int)T);
-#endif
-#endif
 
 	// Calculate temperature
 	temp = T * 0.1f;
@@ -199,20 +132,6 @@ void BMP180::update_pres()
 	uint32_t xlsb = i2c.read_uint8();
 	uint32_t UP = ((msb << 16) + (lsb << 8) + xlsb) >> (8 - oss_shift);
 
-#if defined(BMP180_DEBUG)
-#if defined(PLATFORM_ARDUINO)
-	Serial.println(msb);
-	Serial.println(lsb);
-	Serial.println(xlsb);
-	Serial.println(UP);
-#elif defined(PLATFORM_MBED)
-	serial->printf("%u\n", (unsigned int)msb);
-	serial->printf("%u\n", (unsigned int)lsb);
-	serial->printf("%u\n", (unsigned int)xlsb);
-	serial->printf("%u\n", (unsigned int)UP);
-#endif
-#endif
-
 	// Calibration compensation
 	int32_t b6, x1, x2 ,x3, b3, p;
 	uint32_t b4, b7;
@@ -221,23 +140,6 @@ void BMP180::update_pres()
 	x2 = (ac2 * b6) >> 11;
 	x3 = x1 + x2;
 	b3 = ((((ac1 << 2) + x3) << oss_shift) + 2) >> 2;
-
-#if defined(BMP180_DEBUG)
-#if defined(PLATFORM_ARDUINO)
-	Serial.println(b6);
-	Serial.println(x1);
-	Serial.println(x2);
-	Serial.println(x3);
-	Serial.println(b3);
-#elif defined(PLATFORM_MBED)
-	serial->printf("%i\n", (int)b6);
-	serial->printf("%i\n", (int)x1);
-	serial->printf("%i\n", (int)x2);
-	serial->printf("%i\n", (int)x3);
-	serial->printf("%i\n", (int)b3);
-#endif
-#endif
-
 	x1 = (ac3 * b6) >> 13;
 	x2 = (b1 * ((b6 * b6) >> 12)) >> 16;
 	x3 = ((x1 + x2) + 2) >> 2;
@@ -245,42 +147,11 @@ void BMP180::update_pres()
 	b7 = (UP - b3) * (uint32_t)(50000 >> oss_shift);
 	if (b7 < 0x80000000) { p = (b7 << 1) / b4; }
 	else { p = (b7 / b4) << 1; }
-
-#if defined(BMP180_DEBUG)
-#if defined(PLATFORM_ARDUINO)
-	Serial.println(x1);
-	Serial.println(x2);
-	Serial.println(x3);
-	Serial.println(b4);
-	Serial.println(b7);
-	Serial.println(p);
-#elif defined(PLATFORM_MBED)
-	serial->printf("%i\n", (int)x1);
-	serial->printf("%i\n", (int)x2);
-	serial->printf("%i\n", (int)x3);
-	serial->printf("%u\n", (unsigned int)b4);
-	serial->printf("%u\n", (unsigned int)b7);
-	serial->printf("%i\n", (int)p);
-#endif
-#endif
-
 	x1 = p >> 8;
 	x1 = x1 * x1;
 	x1 = (x1 * 3038) >> 16;
 	x2 = (-7357 * p) >> 16;
 	p = p + ((x1 + x2 + 3791) >> 4);
-
-#if defined(BMP180_DEBUG)
-#if defined(PLATFORM_ARDUINO)
-	Serial.println(x1);
-	Serial.println(x2);
-	Serial.println(p);
-#elif defined(PLATFORM_MBED)
-	serial->printf("%i\n", (int)x1);
-	serial->printf("%i\n", (int)x2);
-	serial->printf("%i\n", (int)p);
-#endif
-#endif
 
 	// Calculate pressure
 	pres = p * 0.001f;
