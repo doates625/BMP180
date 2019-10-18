@@ -63,7 +63,7 @@ public:
 	// Altitude calibration
 	void zero_alt(float sea_level_p = 101.325f);
 
-private:
+protected:
 
 	// I2C Communication
 	static const uint8_t i2c_addr = 0x77;
