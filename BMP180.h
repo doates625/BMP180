@@ -45,7 +45,7 @@ public:
 	sampling_t;
 
 	// Constructor and basics
-#if defined(BMP180_DEBUG)
+#if defined(PLATFORM_MBED) && defined(BMP180_DEBUG)
 	BMP180(I2CDEVICE_I2C_CLASS* i2c, Serial* serial);
 #else
 	BMP180(I2CDEVICE_I2C_CLASS* i2c);
@@ -99,7 +99,7 @@ private:
 	float temp, pres, alt_zero;
 
 	// DEBUG
-#if defined(BMP180_DEBUG)
+#if defined(PLATFORM_MBED) && defined(BMP180_DEBUG)
 	Serial* serial;
 #endif
 };

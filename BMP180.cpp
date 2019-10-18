@@ -9,7 +9,7 @@
  * @brief Constructs BMP180 interface
  * @param i2c Platform-specific I2C bus interface
  */
-#if defined(BMP180_DEBUG)
+#if defined(PLATFORM_MBED) && defined(BMP180_DEBUG)
 BMP180::BMP180(I2CDEVICE_I2C_CLASS* i2c, Serial* serial)
 #else
 BMP180::BMP180(I2CDEVICE_I2C_CLASS* i2c)
@@ -17,7 +17,7 @@ BMP180::BMP180(I2CDEVICE_I2C_CLASS* i2c)
 {
 	this->i2c = I2CDevice(i2c, i2c_addr, I2CDevice::msb_first);
 	this->alt_zero = 0.0f;
-#if defined(BMP180_DEBUG)
+#if defined(PLATFORM_MBED) && defined(BMP180_DEBUG)
 	this->serial = serial;
 #endif
 }
@@ -28,6 +28,14 @@ BMP180::BMP180(I2CDEVICE_I2C_CLASS* i2c)
  */
 bool BMP180::init()
 {
+#if defined(BMP180_DEBUG)
+#if defined(PLATFORM_ARDUINO)
+	Serial.println("BMP180 Debug:");
+#elif defined(PLATFORM_MBED)
+	serial->printf("BMP180 Debug:\n");
+#endif
+#endif
+
 	// Check ID register
 	if (i2c.read_uint8(reg_id_addr) != reg_id_val)
 	{
@@ -47,6 +55,36 @@ bool BMP180::init()
 	mb = i2c.read_int16();
 	mc = i2c.read_int16();
 	md = i2c.read_int16();
+
+#if defined(BMP180_DEBUG)
+#if defined(PLATFORM_ARDUINO)
+	Serial.println("Calibration:");
+	Serial.println(ac1);
+	Serial.println(ac2);
+	Serial.println(ac3);
+	Serial.println(ac4);
+	Serial.println(ac5);
+	Serial.println(ac6);
+	Serial.println(b1);
+	Serial.println(b2);
+	Serial.println(mb);
+	Serial.println(mc);
+	Serial.println(md);
+#elif defined(PLATFORM_MBED)
+	serial->printf("Calibration:\n");
+	serial->printf("%i\n", (int)ac1);
+	serial->printf("%i\n", (int)ac2);
+	serial->printf("%i\n", (int)ac3);
+	serial->printf("%u\n", (unsigned int)ac4);
+	serial->printf("%u\n", (unsigned int)ac5);
+	serial->printf("%u\n", (unsigned int)ac6);
+	serial->printf("%i\n", (int)b1);
+	serial->printf("%i\n", (int)b2);
+	serial->printf("%i\n", (int)mb);
+	serial->printf("%i\n", (int)mc);
+	serial->printf("%i\n", (int)md);
+#endif
+#endif
 
 	// Set sampling to 1x
 	set_sampling(samples_1x);
@@ -107,14 +145,6 @@ void BMP180::update()
  */
 void BMP180::update_temp()
 {
-#if defined(BMP180_DEBUG)
-#if defined(PLATFORM_ARDUINO)
-	Serial.println("BMP180 Debug:");
-#elif defined(PLATFORM_MBED)
-	serial->printf("BMP180 Debug:\n");
-#endif
-#endif
-
 	// Read uncompensated temperature
 	i2c.write_uint8(reg_select_addr, reg_select_temp);
 	Platform::wait_us(4500);
@@ -122,9 +152,9 @@ void BMP180::update_temp()
 
 #if defined(BMP180_DEBUG)
 #if defined(PLATFORM_ARDUINO)
-	Serial.println("UT = " + String(UT));
+	Serial.println(UT);
 #elif defined(PLATFORM_MBED)
-	serial->printf("UT = %i\n", (int)UT);
+	serial->printf("%i\n", (int)UT);
 #endif
 #endif
 
@@ -137,15 +167,15 @@ void BMP180::update_temp()
 
 #if defined(BMP180_DEBUG)
 #if defined(PLATFORM_ARDUINO)
-	Serial.println("X1 = " + String(x1));
-	Serial.println("X2 = " + String(x2));
-	Serial.println("B5 = " + String(b5));
-	Serial.println("T = " + String(T));
+	Serial.println(x1);
+	Serial.println(x2);
+	Serial.println(b5);
+	Serial.println(T);
 #elif defined(PLATFORM_MBED)
-	serial->printf("X1 = %i\n", (int)x1);
-	serial->printf("X2 = %i\n", (int)x2);
-	serial->printf("B5 = %i\n", (int)b5);
-	serial->printf("T = %i\n", (int)T);
+	serial->printf("%i\n", (int)x1);
+	serial->printf("%i\n", (int)x2);
+	serial->printf("%i\n", (int)b5);
+	serial->printf("%i\n", (int)T);
 #endif
 #endif
 
@@ -164,20 +194,22 @@ void BMP180::update_pres()
 	i2c.write_uint8(reg_select_addr, reg_select_oss);
 	Platform::wait_us(comp_time_us);
 	i2c.read_sequence(reg_data_addr, 3);
-	int32_t msb = i2c.read_uint8();
-	int32_t lsb = i2c.read_uint8();
-	int32_t xlsb = i2c.read_uint8();
+	uint32_t msb = i2c.read_uint8();
+	uint32_t lsb = i2c.read_uint8();
+	uint32_t xlsb = i2c.read_uint8();
 	uint32_t UP = ((msb << 16) + (lsb << 8) + xlsb) >> (8 - oss_shift);
 
 #if defined(BMP180_DEBUG)
 #if defined(PLATFORM_ARDUINO)
-	Serial.println("MSB = " + String(msb));
-	Serial.println("LSB = " + String(lsb));
-	Serial.println("XLSB = " + String(xlsb));
+	Serial.println(msb);
+	Serial.println(lsb);
+	Serial.println(xlsb);
+	Serial.println(UP);
 #elif defined(PLATFORM_MBED)
-	serial->printf("MSB = %i\n",(int) msb);
-	serial->printf("LSB = %i\n", (int)lsb);
-	serial->printf("XLSB = %i\n", (int)xlsb);
+	serial->printf("%u\n", (unsigned int)msb);
+	serial->printf("%u\n", (unsigned int)lsb);
+	serial->printf("%u\n", (unsigned int)xlsb);
+	serial->printf("%u\n", (unsigned int)UP);
 #endif
 #endif
 
@@ -192,17 +224,17 @@ void BMP180::update_pres()
 
 #if defined(BMP180_DEBUG)
 #if defined(PLATFORM_ARDUINO)
-	Serial.println("B6 = " + String(b6));
-	Serial.println("X1 = " + String(x1));
-	Serial.println("X2 = " + String(x2));
-	Serial.println("X3 = " + String(x3));
-	Serial.println("B3 = " + String(b3));
+	Serial.println(b6);
+	Serial.println(x1);
+	Serial.println(x2);
+	Serial.println(x3);
+	Serial.println(b3);
 #elif defined(PLATFORM_MBED)
-	serial->printf("B6 = %i\n", (int)b6);
-	serial->printf("X1 = %i\n", (int)x1);
-	serial->printf("X2 = %i\n", (int)x2);
-	serial->printf("X3 = %i\n", (int)x3);
-	serial->printf("B3 = %i\n", (int)b3);
+	serial->printf("%i\n", (int)b6);
+	serial->printf("%i\n", (int)x1);
+	serial->printf("%i\n", (int)x2);
+	serial->printf("%i\n", (int)x3);
+	serial->printf("%i\n", (int)b3);
 #endif
 #endif
 
@@ -216,19 +248,19 @@ void BMP180::update_pres()
 
 #if defined(BMP180_DEBUG)
 #if defined(PLATFORM_ARDUINO)
-	Serial.println("X1 = " + String(x1));
-	Serial.println("X2 = " + String(x2));
-	Serial.println("X3 = " + String(x3));
-	Serial.println("B4 = " + String(b4));
-	Serial.println("B7 = " + String(b7));
-	Serial.println("p = " + String(p));
+	Serial.println(x1);
+	Serial.println(x2);
+	Serial.println(x3);
+	Serial.println(b4);
+	Serial.println(b7);
+	Serial.println(p);
 #elif defined(PLATFORM_MBED)
-	serial->printf("X1 = %i\n", (int)x1);
-	serial->printf("X2 = %i\n", (int)x2);
-	serial->printf("X3 = %i\n", (int)x3);
-	serial->printf("B4 = %i\n", (int)b4);
-	serial->printf("B7 = %i\n", (int)b7);
-	serial->printf("p = %i\n", (int)p);
+	serial->printf("%i\n", (int)x1);
+	serial->printf("%i\n", (int)x2);
+	serial->printf("%i\n", (int)x3);
+	serial->printf("%u\n", (unsigned int)b4);
+	serial->printf("%u\n", (unsigned int)b7);
+	serial->printf("%i\n", (int)p);
 #endif
 #endif
 
@@ -240,13 +272,13 @@ void BMP180::update_pres()
 
 #if defined(BMP180_DEBUG)
 #if defined(PLATFORM_ARDUINO)
-	Serial.println("X1 = " + String(x1));
-	Serial.println("X2 = " + String(x2));
-	Serial.println("p = " + String(p));
+	Serial.println(x1);
+	Serial.println(x2);
+	Serial.println(p);
 #elif defined(PLATFORM_MBED)
-	serial->printf("X1 = %i\n", (int)x1);
-	serial->printf("X2 = %i\n", (int)x2);
-	serial->printf("p = %i\n", (int)p);
+	serial->printf("%i\n", (int)x1);
+	serial->printf("%i\n", (int)x2);
+	serial->printf("%i\n", (int)p);
 #endif
 #endif
 
