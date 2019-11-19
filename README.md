@@ -8,9 +8,9 @@ The BMP180 measures temperature and pressure, and can use this data to estimate 
 Note: This class fails to accurately measure pressure (and thus altitude) on the Arduino platform for 8x oversampling.
 
 ### Dependencies
-- [Unions](https://github.com/doates625/Unions.git)
 - [Platform](https://github.com/doates625/Platform.git)
 - [I2CDevice](https://github.com/doates625/I2CDevice.git)
+- [Struct](https://github.com/doates625/Struct.git)
 
 ### References
 - [Datasheet](https://cdn-shop.adafruit.com/datasheets/BST-BMP180-DS000-09.pdf)

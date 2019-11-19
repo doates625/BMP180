@@ -9,10 +9,8 @@
 /**
  * Minimum I2C Buffer Size
  */
-#if defined(PLATFORM_MBED) && I2CDEVICE_BUFFER_SIZE < 22
-	#warning BMP180 requires I2CDEVICE_BUFFER_SIZE >= 22. Setting to 22.
-	#undef I2CDEVICE_BUFFER_SIZE
-	#define I2CDEVICE_BUFFER_SIZE 22
+#if I2CDEVICE_BUFFER_SIZE < 22
+	#error BMP180 requires I2CDEVICE_BUFFER_SIZE >= 22
 #endif
 
 /**
@@ -33,7 +31,7 @@ public:
 	sampling_t;
 
 	// Constructor and basics
-	BMP180(I2CDEVICE_I2C_CLASS* i2c);
+	BMP180(I2CDevice::i2c_t* i2c);
 	bool init();
 	void set_sampling(sampling_t sampling);
 

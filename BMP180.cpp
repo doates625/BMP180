@@ -9,9 +9,9 @@
  * @brief Constructs BMP180 interface
  * @param i2c Platform-specific I2C bus interface
  */
-BMP180::BMP180(I2CDEVICE_I2C_CLASS* i2c)
+BMP180::BMP180(I2CDevice::i2c_t* i2c) :
+	i2c(i2c, i2c_addr, Struct::msb_first)
 {
-	this->i2c = I2CDevice(i2c, i2c_addr, I2CDevice::msb_first);
 	this->alt_zero = 0.0f;
 }
 
@@ -22,24 +22,24 @@ BMP180::BMP180(I2CDEVICE_I2C_CLASS* i2c)
 bool BMP180::init()
 {
 	// Check ID register
-	if (i2c.read_uint8(reg_id_addr) != reg_id_val)
+	if ((uint8_t)i2c.get_seq(reg_id_addr, 1) != reg_id_val)
 	{
 		return false;
 	}
 
 	// Read calibration params
-	i2c.read_sequence(reg_cal_addr, 22);
-	ac1 = i2c.read_int16();
-	ac2 = i2c.read_int16();
-	ac3 = i2c.read_int16();
-	ac4 = i2c.read_uint16();
-	ac5 = i2c.read_uint16();
-	ac6 = i2c.read_uint16();
-	b1 = i2c.read_int16();
-	b2 = i2c.read_int16();
-	mb = i2c.read_int16();
-	mc = i2c.read_int16();
-	md = i2c.read_int16();
+	i2c.get_seq(reg_cal_addr, 22);
+	ac1 = (int16_t)i2c;
+	ac2 = (int16_t)i2c;
+	ac3 = (int16_t)i2c;
+	ac4 = (uint16_t)i2c;
+	ac5 = (uint16_t)i2c;
+	ac6 = (uint16_t)i2c;
+	b1 = (int16_t)i2c;
+	b2 = (int16_t)i2c;
+	mb = (int16_t)i2c;
+	mc = (int16_t)i2c;
+	md = (int16_t)i2c;
 
 	// Set sampling to 1x
 	set_sampling(samples_1x);
@@ -101,9 +101,9 @@ void BMP180::update()
 void BMP180::update_temp()
 {
 	// Read uncompensated temperature
-	i2c.write_uint8(reg_select_addr, reg_select_temp);
+	i2c.set(reg_select_addr, reg_select_temp);
 	Platform::wait_us(4500);
-	int32_t UT = i2c.read_int16(reg_data_addr);
+	int32_t UT = (int16_t)i2c.get_seq(reg_data_addr, 2);
 
 	// Calibration compensation
 	int32_t x1, x2, T;
@@ -124,12 +124,12 @@ void BMP180::update_temp()
 void BMP180::update_pres()
 {
 	// Read uncompensated pressure
-	i2c.write_uint8(reg_select_addr, reg_select_oss);
+	i2c.set(reg_select_addr, reg_select_oss);
 	Platform::wait_us(comp_time_us);
-	i2c.read_sequence(reg_data_addr, 3);
-	uint32_t msb = i2c.read_uint8();
-	uint32_t lsb = i2c.read_uint8();
-	uint32_t xlsb = i2c.read_uint8();
+	i2c.get_seq(reg_data_addr, 3);
+	uint32_t msb = (uint8_t)i2c;
+	uint32_t lsb = (uint8_t)i2c;
+	uint32_t xlsb = (uint8_t)i2c;
 	uint32_t UP = ((msb << 16) + (lsb << 8) + xlsb) >> (8 - oss_shift);
 
 	// Calibration compensation
